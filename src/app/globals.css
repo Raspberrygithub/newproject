@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0f1115;
+  color: #e7e9ee;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  /* Respect iOS safe areas so the bottom nav clears the home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@layer components {
+  .btn {
+    @apply rounded-xl2 px-4 py-3 font-semibold text-white transition active:scale-95 select-none;
+  }
+  .card-surface {
+    @apply bg-surface rounded-xl2 border border-white/5 shadow-lg;
+  }
+  .input {
+    @apply w-full rounded-xl2 bg-surface2 border border-white/10 px-4 py-3 text-base
+      outline-none focus:border-accent placeholder:text-muted;
+  }
+  .pill {
+    @apply rounded-full px-3 py-1 text-xs font-medium;
+  }
+}
+
+/* Hide scrollbars on mobile for a cleaner app feel. */
+::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
