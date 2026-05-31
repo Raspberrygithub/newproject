@@ -14,14 +14,43 @@ function getClient(): Anthropic {
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 
-// "Opus 4.8 high": run the model with a high extended-thinking budget so it
-// reasons carefully when writing definitions and parsing dictation. Overridable
-// via ANTHROPIC_THINKING_TOKENS; set to 0 to disable thinking.
-const THINKING_TOKENS = Number(process.env.ANTHROPIC_THINKING_TOKENS ?? 6000);
-const thinking =
-  THINKING_TOKENS > 0
-    ? ({ type: "enabled", budget_tokens: THINKING_TOKENS } as const)
-    : undefined;
+// Opus 4.8 uses *adaptive* thinking: the model decides how much to think, and
+// you steer overall depth/spend with an effort level rather than a fixed token
+// budget. (The old { type: "enabled", budget_tokens } form returns a 400 on
+// Opus 4.7/4.8 — that's what "thinking.type.enabled is not supported" meant.)
+//
+// Override depth with ANTHROPIC_EFFORT (low | medium | high | xhigh | max),
+// or turn thinking off entirely with ANTHROPIC_THINKING=off. ANTHROPIC_THINKING_TOKENS=0
+// is still honoured as a way to disable thinking, for backwards compatibility.
+const THINKING_OFF =
+  process.env.ANTHROPIC_THINKING === "off" ||
+  process.env.ANTHROPIC_THINKING_TOKENS === "0";
+const EFFORT = process.env.ANTHROPIC_EFFORT || "high";
+
+const thinking = THINKING_OFF
+  ? ({ type: "disabled" } as const)
+  : ({ type: "adaptive" } as const);
+const outputConfig = THINKING_OFF ? undefined : { effort: EFFORT };
+
+// The installed SDK (0.39) predates Opus 4.8, so `thinking: {type: "adaptive"}`
+// and `output_config` aren't in its types yet — the REST API accepts them, so
+// we build the request loosely and let the SDK serialize it.
+async function createMessage(params: {
+  max_tokens: number;
+  system: string;
+  user: string;
+}): Promise<Anthropic.Message> {
+  const body: Record<string, unknown> = {
+    model: MODEL,
+    max_tokens: params.max_tokens,
+    thinking,
+    ...(outputConfig ? { output_config: outputConfig } : {}),
+    system: params.system,
+    messages: [{ role: "user", content: params.user }],
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return getClient().messages.create(body as any) as Promise<Anthropic.Message>;
+}
 
 export interface DraftCard {
   front: string;
@@ -49,14 +78,8 @@ export async function generateDefinition(
     (instructions ? `Extra instructions from the user:\n"""${instructions}"""\n\n` : "") +
     "Write only the back of the card. No preamble, no quotes around it.";
 
-  const msg = await getClient().messages.create({
-    model: MODEL,
-    // max_tokens must exceed the thinking budget; the answer itself stays short.
-    max_tokens: THINKING_TOKENS + 600,
-    ...(thinking ? { thinking } : {}),
-    system: sys,
-    messages: [{ role: "user", content: user }],
-  });
+  // The answer itself is short; max_tokens just caps the visible output.
+  const msg = await createMessage({ max_tokens: 1024, system: sys, user });
 
   return textOf(msg).trim();
 }
@@ -80,17 +103,10 @@ export async function parseDictationToCards(transcript: string): Promise<DraftCa
     '[{"front": string, "back": string, "tags": string[]}]. ' +
     "If you cannot extract any card, return [].";
 
-  const msg = await getClient().messages.create({
-    model: MODEL,
-    max_tokens: THINKING_TOKENS + 2000,
-    ...(thinking ? { thinking } : {}),
+  const msg = await createMessage({
+    max_tokens: 4096,
     system: sys,
-    messages: [
-      {
-        role: "user",
-        content: `Dictation transcript:\n"""${transcript}"""\n\nReturn the JSON array of cards.`,
-      },
-    ],
+    user: `Dictation transcript:\n"""${transcript}"""\n\nReturn the JSON array of cards.`,
   });
 
   const raw = textOf(msg).trim();

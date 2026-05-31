@@ -54,9 +54,10 @@ No login/passcode — the app opens straight in.
 
 ## AI model
 
-Defaults to **Claude Opus 4.8** with extended thinking (high reasoning) for
+Defaults to **Claude Opus 4.8** with adaptive thinking at **high** effort for
 writing definitions and parsing dictation. Override with the `ANTHROPIC_MODEL`
-and `ANTHROPIC_THINKING_TOKENS` env vars if you ever want cheaper/faster.
+and `ANTHROPIC_EFFORT` (`low`/`medium`/`high`/`xhigh`/`max`) env vars, or set
+`ANTHROPIC_THINKING="off"`, if you ever want cheaper/faster.
 
 ## Tech
 
