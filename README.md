@@ -13,7 +13,7 @@ no App Store, no opening your Mac.
 Click this button. It creates the app **and a free database for you
 automatically** — you only paste **one** thing: your Anthropic API key.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fraspberrygithub%2Fnewproject&project-name=memory&repository-name=memory&env=ANTHROPIC_API_KEY&envDescription=Your%20Anthropic%20API%20key%20(starts%20with%20sk-ant-)&envLink=https%3A%2F%2Fconsole.anthropic.com%2Fsettings%2Fkeys&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%7D%5D)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fraspberrygithub%2Fnewproject&project-name=memory&repository-name=memory&env=ANTHROPIC_API_KEY&envDescription=Your%20Anthropic%20API%20key%20(starts%20with%20sk-ant-)&envLink=https%3A%2F%2Fconsole.anthropic.com%2Fsettings%2Fkeys&products=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%5D)
 
 **What happens when you click:**
 
