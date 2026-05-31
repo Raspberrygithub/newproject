@@ -6,6 +6,33 @@ memory app), built to be **dead simple on your phone** and powered by **Claude**
 Open it in a browser, tap *Add to Home Screen*, and it works like a native app —
 no App Store, no opening your Mac.
 
+---
+
+## 🚀 Deploy it (one click)
+
+Click this button. It creates the app **and a free database for you
+automatically** — you only paste **one** thing: your Anthropic API key.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fraspberrygithub%2Fnewproject&project-name=memory&repository-name=memory&env=ANTHROPIC_API_KEY&envDescription=Your%20Anthropic%20API%20key%20(starts%20with%20sk-ant-)&envLink=https%3A%2F%2Fconsole.anthropic.com%2Fsettings%2Fkeys&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%7D%5D)
+
+**What happens when you click:**
+
+1. Sign in with GitHub (one tap).
+2. Vercel asks for **`ANTHROPIC_API_KEY`** → paste your key from
+   <https://console.anthropic.com/settings/keys>.
+3. It offers to add a **Neon Postgres** database → click **Add** / accept. (This
+   sets `DATABASE_URL` for you — nothing to copy.)
+4. Click **Deploy**. ~2 minutes later you get your URL, e.g.
+   `https://memory-xxxx.vercel.app`.
+5. Open that URL on your phone → **Add to Home Screen**. Done. ✅
+
+That's the whole thing. No connection strings, no passwords, no command line.
+
+> Already made a Supabase database and want to use it instead? See
+> [DEPLOY.md](./DEPLOY.md) for the manual route.
+
+---
+
 ## Features
 
 - **🎯 Spaced repetition** — SM-2-inspired scheduler (works in minutes). Grade
@@ -22,26 +49,28 @@ no App Store, no opening your Mac.
   `/api/ai/parse` for scripting and automation.
 - **📱 Installable PWA** — manifest, service worker, offline app shell,
   mobile-first dark UI.
-- **🔒 Single-user passcode** — set `APP_PASSCODE` to lock the public web.
+
+No login/passcode — the app opens straight in.
+
+## AI model
+
+Defaults to **Claude Opus 4.8** with extended thinking (high reasoning) for
+writing definitions and parsing dictation. Override with the `ANTHROPIC_MODEL`
+and `ANTHROPIC_THINKING_TOKENS` env vars if you ever want cheaper/faster.
 
 ## Tech
 
-Next.js 14 (App Router) · TypeScript · Tailwind · Prisma · SQLite (dev) /
-Postgres (prod) · Anthropic SDK.
+Next.js 14 (App Router) · TypeScript · Tailwind · Prisma · Postgres (Neon) ·
+Anthropic SDK.
 
-## Quick start (local)
+## Local development
 
 ```bash
-cp .env.example .env     # add your ANTHROPIC_API_KEY
-npx prisma db push       # create local SQLite db
+cp .env.example .env     # add your ANTHROPIC_API_KEY + a DATABASE_URL
+npx prisma db push       # create tables
 npm run db:seed          # optional sample cards
 npm run dev              # http://localhost:3000
 ```
-
-## Put it on your phone
-
-See **[DEPLOY.md](./DEPLOY.md)** — one 1-line edit + pasting 4 env values into
-Vercel (free), then *Add to Home Screen*. No command line.
 
 ## How scheduling works
 
@@ -50,37 +79,3 @@ review`. Grading adjusts the ease factor and interval (SM-2); "Again" drops a
 review card back into a 5-minute relearning step. `delay()` pushes a card out by
 an exact amount for the preset buttons. Every answer is logged to the `Review`
 table for stats.
-
-## Project layout
-
-```
-src/
-  app/
-    page.tsx            # dashboard
-    review/             # study session (grade + delay buttons)
-    voice/              # dictation -> Claude -> draft cards
-    add/                # manual add + "Ask Claude"
-    browse/             # search / edit / delete
-    login/              # passcode
-    api/
-      cards/            # CRUD + batch create
-      review/           # due queue + submit answer
-      stats/            # dashboard counts
-      ai/define/        # Claude writes a card back
-      ai/parse/         # dictation -> structured cards
-      auth/             # passcode login
-  lib/
-    scheduler.ts        # spaced-repetition engine
-    anthropic.ts        # Claude calls
-    db.ts               # Prisma client
-    auth.ts             # single-user passcode
-scripts/
-  generate-icons.mjs    # PWA icons (no deps)
-  smoketest.mjs         # end-to-end API test
-```
-
-## Tested
-
-`scripts/smoketest.mjs` runs the full loop against a live server (create card →
-appears in due queue with grade previews → grade "Good" → schedules 1 day →
-leaves queue → 5-min custom delay → search → delete). All assertions pass.
