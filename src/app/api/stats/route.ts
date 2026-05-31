@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/apiAuth";
 
+// Always run at request time — never prerender (it queries the database).
+export const dynamic = "force-dynamic";
+
 // GET /api/stats -> high level deck stats for the dashboard.
 export async function GET() {
   const unauth = requireAuth();

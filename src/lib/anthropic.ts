@@ -12,7 +12,16 @@ function getClient(): Anthropic {
   return client;
 }
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+
+// "Opus 4.8 high": run the model with a high extended-thinking budget so it
+// reasons carefully when writing definitions and parsing dictation. Overridable
+// via ANTHROPIC_THINKING_TOKENS; set to 0 to disable thinking.
+const THINKING_TOKENS = Number(process.env.ANTHROPIC_THINKING_TOKENS ?? 6000);
+const thinking =
+  THINKING_TOKENS > 0
+    ? ({ type: "enabled", budget_tokens: THINKING_TOKENS } as const)
+    : undefined;
 
 export interface DraftCard {
   front: string;
@@ -42,7 +51,9 @@ export async function generateDefinition(
 
   const msg = await getClient().messages.create({
     model: MODEL,
-    max_tokens: 600,
+    // max_tokens must exceed the thinking budget; the answer itself stays short.
+    max_tokens: THINKING_TOKENS + 600,
+    ...(thinking ? { thinking } : {}),
     system: sys,
     messages: [{ role: "user", content: user }],
   });
@@ -71,7 +82,8 @@ export async function parseDictationToCards(transcript: string): Promise<DraftCa
 
   const msg = await getClient().messages.create({
     model: MODEL,
-    max_tokens: 2000,
+    max_tokens: THINKING_TOKENS + 2000,
+    ...(thinking ? { thinking } : {}),
     system: sys,
     messages: [
       {
