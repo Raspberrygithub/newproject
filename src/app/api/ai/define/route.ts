@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/apiAuth";
 import { generateDefinition } from "@/lib/anthropic";
 
 // POST /api/ai/define  body: { front, instructions? }
 // "Look up this card / write the definition" — Claude fills the back.
 export async function POST(req: NextRequest) {
-  const unauth = requireAuth();
-  if (unauth) return unauth;
-
   const body = await req.json().catch(() => ({}));
   const front = typeof body.front === "string" ? body.front.trim() : "";
   if (!front) return NextResponse.json({ error: "front is required" }, { status: 400 });

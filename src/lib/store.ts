@@ -6,8 +6,14 @@
 // dictation parsing), and those are optional — the app works fully offline
 // without them.
 
-import { schedule, delay as delaySchedule, type Grade } from "./scheduler";
+import {
+  grade as applyGrade,
+  delay as applyDelay,
+  type Grade,
+  type SchedulableCard,
+} from "./scheduler";
 
+export type { Grade };
 export type CardState = "new" | "learning" | "review";
 
 export interface Card {
@@ -17,7 +23,7 @@ export interface Card {
   tags: string[];
   state: CardState;
   due: string; // ISO
-  intervalDays: number;
+  intervalMin: number;
   ease: number;
   reps: number;
   lapses: number;
@@ -68,19 +74,28 @@ function logReview(): void {
   if (typeof window === "undefined") return;
   const log = readReviewLog();
   log.push(new Date().toISOString());
-  // keep the log from growing forever — last 1000 reviews is plenty for "today"
+  // keep the log from growing forever — last 2000 reviews is plenty for "today"
   window.localStorage.setItem(
     REVIEWLOG_KEY,
-    JSON.stringify(log.slice(-1000))
+    JSON.stringify(log.slice(-2000))
   );
 }
 
 function uid(): string {
-  // Prefer the platform UUID; fall back for older browsers.
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function schedulableOf(c: Card): SchedulableCard {
+  return {
+    state: c.state,
+    intervalMin: c.intervalMin,
+    ease: c.ease,
+    reps: c.reps,
+    lapses: c.lapses,
+  };
 }
 
 // ---- public API (all synchronous, all local) ----
@@ -106,7 +121,7 @@ export function addCard(input: NewCardInput): Card {
     tags: (input.tags || []).map((t) => t.trim()).filter(Boolean),
     state: "new",
     due: now, // new cards are due immediately
-    intervalDays: 0,
+    intervalMin: 0,
     ease: 2.5,
     reps: 0,
     lapses: 0,
@@ -140,27 +155,16 @@ export function getQueue(now = new Date()): Card[] {
     });
 }
 
-export function gradeCard(id: string, grade: Grade, now = new Date()): void {
+export function gradeCard(id: string, g: Grade, now = new Date()): void {
   const cards = readCards();
   const i = cards.findIndex((c) => c.id === id);
   if (i === -1) return;
-  const c = cards[i];
-  const next = schedule(
-    {
-      state: c.state,
-      due: new Date(c.due),
-      intervalDays: c.intervalDays,
-      ease: c.ease,
-      reps: c.reps,
-      lapses: c.lapses,
-    },
-    { grade, now }
-  );
+  const next = applyGrade(schedulableOf(cards[i]), g, now);
   cards[i] = {
-    ...c,
+    ...cards[i],
     state: next.state,
     due: next.due.toISOString(),
-    intervalDays: next.intervalDays,
+    intervalMin: next.intervalMin,
     ease: next.ease,
     reps: next.reps,
     lapses: next.lapses,
@@ -170,24 +174,18 @@ export function gradeCard(id: string, grade: Grade, now = new Date()): void {
   logReview();
 }
 
-export function delayCard(id: string, ms: number, now = new Date()): void {
+export function delayCard(id: string, minutes: number, now = new Date()): void {
   const cards = readCards();
   const i = cards.findIndex((c) => c.id === id);
   if (i === -1) return;
-  const c = cards[i];
-  const next = delaySchedule(
-    {
-      state: c.state,
-      due: new Date(c.due),
-      intervalDays: c.intervalDays,
-      ease: c.ease,
-      reps: c.reps,
-      lapses: c.lapses,
-    },
-    ms,
-    now
-  );
-  cards[i] = { ...c, due: next.due.toISOString(), updatedAt: now.toISOString() };
+  const next = applyDelay(schedulableOf(cards[i]), minutes, now);
+  cards[i] = {
+    ...cards[i],
+    state: next.state,
+    due: next.due.toISOString(),
+    intervalMin: next.intervalMin,
+    updatedAt: now.toISOString(),
+  };
   writeCards(cards);
   logReview();
 }
@@ -212,7 +210,11 @@ export function getStats(now = new Date()): ReviewStats {
 // ---- export / import (so data isn't trapped — a safety valve) ----
 
 export function exportJSON(): string {
-  return JSON.stringify({ cards: readCards(), reviewLog: readReviewLog() }, null, 2);
+  return JSON.stringify(
+    { cards: readCards(), reviewLog: readReviewLog() },
+    null,
+    2
+  );
 }
 
 export function importJSON(json: string): number {

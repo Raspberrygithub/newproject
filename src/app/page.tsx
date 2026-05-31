@@ -130,9 +130,9 @@ export default function Home() {
     setStats(getStats());
   };
 
-  const handleDelay = (ms: number) => {
+  const handleDelay = (minutes: number) => {
     if (!current) return;
-    delayCard(current.id, ms);
+    delayCard(current.id, minutes);
     const rest = queue.slice(1);
     setQueue(rest);
     setCurrent(rest[0] || null);
@@ -342,34 +342,19 @@ export default function Home() {
               )}
               {showBack && (
                 <div className="delays">
-                  <button
-                    className="delay"
-                    onClick={() => handleDelay(5 * 60 * 1000)}
-                  >
+                  <button className="delay" onClick={() => handleDelay(5)}>
                     5 min
                   </button>
-                  <button
-                    className="delay"
-                    onClick={() => handleDelay(24 * 60 * 60 * 1000)}
-                  >
+                  <button className="delay" onClick={() => handleDelay(1440)}>
                     1 day
                   </button>
-                  <button
-                    className="delay"
-                    onClick={() => handleDelay(2 * 24 * 60 * 60 * 1000)}
-                  >
+                  <button className="delay" onClick={() => handleDelay(2880)}>
                     2 days
                   </button>
-                  <button
-                    className="delay"
-                    onClick={() => handleDelay(3 * 24 * 60 * 60 * 1000)}
-                  >
+                  <button className="delay" onClick={() => handleDelay(4320)}>
                     3 days
                   </button>
-                  <button
-                    className="delay"
-                    onClick={() => handleDelay(14 * 24 * 60 * 60 * 1000)}
-                  >
+                  <button className="delay" onClick={() => handleDelay(20160)}>
                     2 weeks
                   </button>
                 </div>

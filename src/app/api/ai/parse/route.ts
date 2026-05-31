@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/apiAuth";
 import { parseDictationToCards } from "@/lib/anthropic";
 
 // POST /api/ai/parse  body: { transcript }
 // Turns a voice/text dictation into structured draft cards (not yet saved).
 export async function POST(req: NextRequest) {
-  const unauth = requireAuth();
-  if (unauth) return unauth;
-
   const body = await req.json().catch(() => ({}));
   const transcript = typeof body.transcript === "string" ? body.transcript.trim() : "";
   if (!transcript) {

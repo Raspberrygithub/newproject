@@ -1,12 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { BottomNav } from "@/components/BottomNav";
-import { ServiceWorker } from "@/components/ServiceWorker";
 
 export const metadata: Metadata = {
   title: "Memory",
   description: "Spaced repetition with Claude AI and voice input.",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -23,14 +20,14 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body className="min-h-screen">
-        <main className="mx-auto w-full max-w-xl px-4 pb-28 pt-6">{children}</main>
-        <BottomNav />
-        <ServiceWorker />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
