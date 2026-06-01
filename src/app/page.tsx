@@ -29,8 +29,11 @@ async function jsonPost<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `Request failed: ${res.status}`);
+    // Routes return { error }. Surface that message; fall back to status text.
+    const data = await res.json().catch(() => null);
+    throw new Error(
+      (data && data.error) || `Request failed: ${res.status}`
+    );
   }
   return res.json();
 }

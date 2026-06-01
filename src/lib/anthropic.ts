@@ -22,10 +22,15 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 // Override depth with ANTHROPIC_EFFORT (low | medium | high | xhigh | max),
 // or turn thinking off entirely with ANTHROPIC_THINKING=off. ANTHROPIC_THINKING_TOKENS=0
 // is still honoured as a way to disable thinking, for backwards compatibility.
+//
+// We default to "medium": writing a flashcard answer or splitting dictation
+// doesn't need deep reasoning, and lower effort means the model spends fewer
+// tokens thinking — so the (capped) max_tokens is far more likely to leave room
+// for the actual answer instead of being eaten by thinking.
 const THINKING_OFF =
   process.env.ANTHROPIC_THINKING === "off" ||
   process.env.ANTHROPIC_THINKING_TOKENS === "0";
-const EFFORT = process.env.ANTHROPIC_EFFORT || "high";
+const EFFORT = process.env.ANTHROPIC_EFFORT || "medium";
 
 const thinking = THINKING_OFF
   ? ({ type: "disabled" } as const)
@@ -78,8 +83,9 @@ export async function generateDefinition(
     (instructions ? `Extra instructions from the user:\n"""${instructions}"""\n\n` : "") +
     "Write only the back of the card. No preamble, no quotes around it.";
 
-  // The answer itself is short; max_tokens just caps the visible output.
-  const msg = await createMessage({ max_tokens: 1024, system: sys, user });
+  // max_tokens covers thinking + the answer on Opus 4.8, so give generous
+  // headroom — a too-low cap gets eaten by thinking and returns no text.
+  const msg = await createMessage({ max_tokens: 8000, system: sys, user });
 
   return textOf(msg).trim();
 }
@@ -104,7 +110,7 @@ export async function parseDictationToCards(transcript: string): Promise<DraftCa
     "If you cannot extract any card, return [].";
 
   const msg = await createMessage({
-    max_tokens: 4096,
+    max_tokens: 16000,
     system: sys,
     user: `Dictation transcript:\n"""${transcript}"""\n\nReturn the JSON array of cards.`,
   });
